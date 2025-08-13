@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 
-const API = "https://countries-search-data-prod-812920491762.asia-south1.run.app/countries";
+const API =
+  "https://countries-search-data-prod-812920491762.asia-south1.run.app/countries";
 
+// Robust readers (still “raw array”, no normalization)
 const getName = (c) => {
   if (!c) return "";
-  if (typeof c?.common === "string") return c.common;            // payload A: { common, png }
-  if (typeof c?.name?.common === "string") return c.name.common; // payload B: { name: { common }, flags: { png } }
+  if (typeof c.common === "string") return c.common;            // payload A: { common, png }
+  if (typeof c?.name?.common === "string") return c.name.common; // payload B: { name: { common } }
   if (typeof c?.name === "string") return c.name;
   if (typeof c?.countryName === "string") return c.countryName;
   if (typeof c?.country === "string") return c.country;
@@ -13,7 +15,15 @@ const getName = (c) => {
 };
 
 const getFlag = (c) =>
-  c?.png || c?.flags?.png || c?.flags?.svg || "";
+  (c?.png || c?.flags?.png || c?.flags?.svg || "").replace(/^http:\/\//, "https://");
+
+// Word-prefix match: any token starts with query (case-insensitive)
+const matchesQuery = (name, q) => {
+  if (!q) return true;
+  const lower = name.toLowerCase();
+  const tokens = lower.split(/[\s,.'()-]+/).filter(Boolean);
+  return tokens.some((t) => t.startsWith(q));
+};
 
 export default function App() {
   const [countries, setCountries] = useState([]);
@@ -36,10 +46,7 @@ export default function App() {
   }, []);
 
   const q = query.trim().toLowerCase();
-  const filtered =
-    q === ""
-      ? countries
-      : countries.filter((c) => getName(c).toLowerCase().includes(q));
+  const filtered = countries.filter((c) => matchesQuery(getName(c), q));
 
   return (
     <div style={styles.page}>
@@ -65,7 +72,7 @@ export default function App() {
                 style={styles.card}
               >
                 {flagSrc && <img src={flagSrc} alt={`flag of ${name}`} style={styles.flag} />}
-                <h4 style={styles.name}>{name}</h4>
+                <h2 style={styles.name}>{name}</h2>
               </div>
             );
           })}
