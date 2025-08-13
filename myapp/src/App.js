@@ -2,6 +2,19 @@ import React, { useEffect, useState } from "react";
 
 const API = "https://countries-search-data-prod-812920491762.asia-south1.run.app/countries";
 
+const getName = (c) => {
+  if (!c) return "";
+  if (typeof c?.common === "string") return c.common;            // payload A: { common, png }
+  if (typeof c?.name?.common === "string") return c.name.common; // payload B: { name: { common }, flags: { png } }
+  if (typeof c?.name === "string") return c.name;
+  if (typeof c?.countryName === "string") return c.countryName;
+  if (typeof c?.country === "string") return c.country;
+  return "";
+};
+
+const getFlag = (c) =>
+  c?.png || c?.flags?.png || c?.flags?.svg || "";
+
 export default function App() {
   const [countries, setCountries] = useState([]);
   const [query, setQuery] = useState("");
@@ -26,18 +39,7 @@ export default function App() {
   const filtered =
     q === ""
       ? countries
-      : countries.filter((c) =>
-          (
-            c?.common ||              // <-- top-level name (your payload)
-            c?.name?.common ||
-            c?.name ||
-            c?.countryName ||
-            c?.country ||
-            ""
-          )
-            .toLowerCase()
-            .includes(q)
-        );
+      : countries.filter((c) => getName(c).toLowerCase().includes(q));
 
   return (
     <div style={styles.page}>
@@ -54,20 +56,8 @@ export default function App() {
       ) : (
         <div style={styles.grid}>
           {filtered.map((c, i) => {
-            const name =
-              c?.common ||            // <-- use top-level 'common'
-              c?.name?.common ||
-              c?.name ||
-              c?.countryName ||
-              c?.country ||
-              "Unknown";
-
-            const flagSrc =
-              c?.png ||               // <-- use top-level 'png'
-              c?.flags?.png ||
-              c?.flags?.svg ||
-              "";
-
+            const name = getName(c) || "Unknown";
+            const flagSrc = getFlag(c);
             return (
               <div
                 key={c?.cca3 || c?.cca2 || c?.ccn3 || c?.cioc || `${name}-${i}`}
